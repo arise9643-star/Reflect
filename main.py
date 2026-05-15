@@ -47,4 +47,23 @@ def create_entry(entry: entryquery):
 @app.get("/entries")
 def get_entries():
     return data.get_entries()
+class ChatRequest(BaseModel):
+    message: str      # what the user asked
+    entries: list     # all their diary entries
+    userName: str     # their name
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    context = "\n---\n".join([
+        f"Date: {e['date']}, Mood: {e['mood']}\n{e['content']}"
+        for e in req.entries
+    ]) if req.entries else "No entries yet."
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": f"You are a wise motherly guide for {req.userName}. Here are their journal entries:\n{context}\nHelp them understand themselves.also recommend what they should be doing insted to better thier life"},
+            {"role": "user", "content": req.message}
+        ]
+    )
+    return {"response": response.choices[0].message.content}
 
